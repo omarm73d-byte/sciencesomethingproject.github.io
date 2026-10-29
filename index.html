@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electric Circuits Science Lab</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { color: #38bdf8; margin-bottom: 5px; }
+        p.subtitle { color: #9ca3af; margin-top: 0; }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .circuit-card {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            width: 320px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h3 { color: #38bdf8; margin-top: 0; }
+        canvas {
+            background-color: #0f172a;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            margin-bottom: 15px;
+        }
+        .meter-display {
+            background-color: #090d16;
+            border: 1px solid #22c55e;
+            color: #22c55e;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: left;
+            margin-bottom: 15px;
+            min-height: 80px;
+        }
+        .btn {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .btn:hover { background-color: #dc2626; }
+    </style>
+</head>
+<body>
+
+    <h1>⚡ Electric Circuit Simulator Lab</h1>
+    <p class="subtitle">Click the batteries to change voltage, observe the meters, and watch electrons flow!</p>
+
+    <div class="container" id="circuit-container"></div>
+
+    <script>
+        // Circuit configurations data
+        const circuits = [
+            { id: 1, name: "Circuit 1 (Voltmeter Focus)", type: "Voltmeter", voltage: 12, resistance: 4, color: "#38bdf8" },
+            { id: 2, name: "Circuit 2 (Ammeter Focus)", type: "Ammeter", voltage: 24, resistance: 8, color: "#fbbf24" },
+            { id: 3, name: "Circuit 3 (Ohmmeter Focus)", type: "Ohmmeter", voltage: 10, resistance: 5, color: "#a855f7" }
+        ];
+
+        let circuitStats = {};
+        let electrons = {};
+
+        // Build HTML UI components for each circuit dynamically
+        const container = document.getElementById("circuit-container");
+
+        circuits.forEach(circ => {
+            circuitStats[circ.id] = { time: 0, charge: 0 };
+            
+            // Initialize 5 moving electron positions along a loop
+            electrons[circ.id] = [];
+            for(let i=0; i<5; i++) {
+                electrons[circ.id].push({ pos: i * 50 });
+            }
+
+            const card = document.createElement("div");
+            card.className = "circuit-card";
+            card.innerHTML = `
+                <h3>${circ.name}</h3>
+                <canvas id="canvas-${circ.id}" width="280" height="120"></canvas>
+                <div class="meter-display" id="meter-${circ.id}">Loading...</div>
+                <button class="btn" onclick="boostBattery(${circ.id})">🔋 Click Battery (+2V)</button>
+            `;
+            container.appendChild(card);
+        });
+
+        function boostBattery(id) {
+            const circ = circuits.find(c => c.id === id);
+            circ.voltage += 2;
+            if (circ.voltage > 50) circ.voltage = 10; // Reset loop
+        }
+
+        // Main Animation & Physics Loop
+        let lastTime = performance.now();
+
+        function updateSimulation(currentTime) {
+            const dt = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            circuits.forEach(circ => {
+                const stats = circuitStats[circ.id];
+                stats.time += dt;
+
+                // Ohm's Law: V = I * R  =>  I (Intensity/Current) = V / R
+                const current = circ.voltage / circ.resistance;
+                stats.charge = current * stats.time; // Q = I * t
+
+                // Update Meter Screen Text based on Circuit Type
+                const meterBox = document.getElementById(`meter-${circ.id}`);
+                if (circ.type === "Voltmeter") {
+                    meterBox.innerHTML = `[VOLTMETER METER]<br>• Voltage (V): <b>${circ.voltage.toFixed(1)} V</b><br>• Resistance: ${circ.resistance} Ω<br>• Current: ${current.toFixed(2)} A`;
+                } else if (circ.type === "Ammeter") {
+                    meterBox.innerHTML = `[AMMETER METER]<br>• Intensity (Current): <b>${current.toFixed(2)} Amps (A)</b><br>• Voltage: ${circ.voltage.toFixed(1)} V<br>• Resistance: ${circ.resistance} Ω`;
+                } else {
+                    meterBox.innerHTML = `[OHMMETER & CHARGE]<br>• Resistance: <b>${circ.resistance} Ohms (Ω)</b><br>• Time (t): ${stats.time.toFixed(1)} s<br>• Charge (Q): <b>${stats.charge.toFixed(2)} C</b>`;
+                }
+
+                // Render Canvas Graphics & Moving Electrons
+                const canvas = document.getElementById(`canvas-${circ.id}`);
+                const ctx = canvas.getContext("2d");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw Circuit Wire Path
+                ctx.strokeStyle = "#475569";
+                ctx.lineWidth = 4;
+                ctx.strokeRect(30, 20, 220, 80);
+
+                // Draw Battery Icon
+                ctx.fillStyle = "#ef4444";
+                ctx.fillRect(35, 45, 15, 30);
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "10px sans-serif";
+                ctx.fillText("BAT", 32, 40);
+
+                // Draw Resistor Icon
+                ctx.fillStyle = "#3b82f6";
+                ctx.fillRect(230, 45, 15, 30);
+                ctx.fillText("RES", 228, 40);
+
+                // Animate Electrons moving along the perimeter (Width 220, Height 80 -> Perimeter = 600)
+                const perimeter = 600;
+                const speed = current * 25; // Speed depends on current intensity
+
+                ctx.fillStyle = "#22c55e"; // Glowing electron dots
+                electrons[circ.id].forEach(el => {
+                    el.pos = (el.pos + speed * dt) % perimeter;
+                    
+                    // Calculate coordinates along the rectangular wire path
+                    let x = 0, y = 0;
+                    let p = el.pos;
+                    if (p < 220) { x = 30 + p; y = 20; }
+                    else if (p < 300) { x = 250; y = 20 + (p - 220); }
+                    else if (p < 520) { x = 250 - (p - 300); y = 100; }
+                    else { x = 30; y = 100 - (p - 520); }
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            });
+
+            requestAnimationFrame(updateSimulation);
+        }
+
+        requestAnimationFrame(updateSimulation);
+    </script>
+
+</body>
+</html>
