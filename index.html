@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Series & Parallel Circuits Lab</title>
+    <title>Circuits, Switches & Real-Life Examples Lab</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -14,7 +14,7 @@
             padding: 20px;
         }
         h1 { color: #38bdf8; margin-bottom: 5px; }
-        p.subtitle { color: #9ca3af; margin-top: 0; margin-bottom: 30px; }
+        p.subtitle { color: #9ca3af; margin-top: 0; margin-bottom: 25px; }
         .container {
             display: flex;
             flex-wrap: wrap;
@@ -30,13 +30,17 @@
             padding: 15px;
             width: 320px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-align: left;
         }
-        h3 { color: #38bdf8; margin-top: 0; font-size: 16px; }
+        h3 { color: #38bdf8; margin-top: 0; font-size: 15px; text-align: center; }
         canvas {
             background-color: #0f172a;
             border-radius: 8px;
             border: 1px solid #475569;
             margin-bottom: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         .meter-display {
             background-color: #090d16;
@@ -45,40 +49,82 @@
             font-family: monospace;
             padding: 8px;
             border-radius: 6px;
-            font-size: 13px;
-            text-align: left;
+            font-size: 12px;
+            margin-bottom: 8px;
+            min-height: 70px;
+        }
+        .real-life {
+            font-size: 11px;
+            color: #fbbf24;
+            background: #292524;
+            padding: 6px;
+            border-radius: 4px;
             margin-bottom: 10px;
-            min-height: 75px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 5px;
         }
         .btn {
             background-color: #3b82f6;
             color: white;
             border: none;
-            padding: 8px 12px;
-            font-size: 13px;
+            padding: 7px 10px;
+            font-size: 12px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
-            width: 100%;
+            flex: 1;
             transition: background 0.2s;
         }
         .btn:hover { background-color: #2563eb; }
+        .btn-switch {
+            background-color: #ef4444;
+        }
+        .btn-switch.closed {
+            background-color: #22c55e;
+        }
     </style>
 </head>
 <body>
 
-    <h1>⚡ Series & Parallel Circuits Science Lab</h1>
-    <p class="subtitle">Explore how adding cells in Series vs. Parallel affects voltage, current, and electron flow!</p>
+    <h1>⚡ Circuits, Switches & Real-Life Lab</h1>
+    <p class="subtitle">Test series vs. parallel setups, toggle switches, and watch how electrons react!</p>
 
     <div class="container" id="circuit-container"></div>
 
     <script>
-        // Circuit configurations including Series and Parallel cell setups
         const circuits = [
-            { id: 1, name: "Circuit 1: Single Cell Baseline", type: "Standard", cells: 1, cellVoltage: 12, resistance: 4 },
-            { id: 2, name: "Circuit 2: Cells in SERIES (+)", type: "Series", cells: 2, cellVoltage: 6, resistance: 4 },
-            { id: 3, name: "Circuit 3: Cells in PARALLEL (||)", type: "Parallel", cells: 2, cellVoltage: 12, resistance: 4 },
-            { id: 4, name: "Circuit 4: Multi-Cell Series Lab", type: "Series", cells: 3, cellVoltage: 5, resistance: 3 }
+            { 
+                id: 1, 
+                name: "1. Series Circuit Example", 
+                type: "Series", 
+                cells: 2, 
+                voltage: 12, 
+                resistance: 4, 
+                switchClosed: true,
+                realLife: "💡 **Real-Life Example:** Old Christmas tree string lights. If one bulb burns out (opens the circuit), the whole string goes dark!"
+            },
+            { 
+                id: 2, 
+                name: "2. Parallel Circuit Example", 
+                type: "Parallel", 
+                cells: 2, 
+                voltage: 12, 
+                resistance: 4, 
+                switchClosed: true,
+                realLife: "💡 **Real-Life Example:** House wall outlets. If you turn off one lamp, the other lamps in the room stay on because they have separate paths."
+            },
+            { 
+                id: 3, 
+                name: "3. Switch Control Lab", 
+                type: "Standard", 
+                cells: 1, 
+                voltage: 15, 
+                resistance: 5, 
+                switchClosed: false,
+                realLife: "🔋 **Concept:** Click the green/red switch button to open or close the loop and see electrons start or stop moving instantly."
+            }
         ];
 
         let circuitStats = {};
@@ -91,24 +137,42 @@
             
             electrons[circ.id] = [];
             for(let i=0; i<5; i++) {
-                electrons[circ.id].push({ pos: i * 50 });
+                electrons[circ.id].push({ pos: i * 55 });
             }
 
             const card = document.createElement("div");
             card.className = "circuit-card";
             card.innerHTML = `
                 <h3>${circ.name}</h3>
-                <canvas id="canvas-${circ.id}" width="280" height="100"></canvas>
+                <canvas id="canvas-${circ.id}" width="280" height="90"></canvas>
+                <div class="real-life">${circ.realLife}</div>
                 <div class="meter-display" id="meter-${circ.id}">Loading...</div>
-                <button class="btn" onclick="addCell(${circ.id})">🔋 Add Cell (${circ.type})</button>
+                <div class="btn-group">
+                    <button class="btn" onclick="boostBattery(${circ.id})">🔋 Boost (+V)</button>
+                    <button class="btn btn-switch ${circ.switchClosed ? 'closed' : ''}" id="btn-switch-${circ.id}" onclick="toggleSwitch(${circ.id})">Switch: ${circ.switchClosed ? 'CLOSED' : 'OPEN'}</button>
+                </div>
             `;
             container.appendChild(card);
         });
 
-        function addCell(id) {
+        function boostBattery(id) {
             const circ = circuits.find(c => c.id === id);
-            circ.cells += 1;
-            if (circ.cells > 4) circ.cells = 1; // Loop back down after 4 cells
+            circ.voltage += 3;
+            if (circ.voltage > 30) circ.voltage = 9;
+        }
+
+        function toggleSwitch(id) {
+            const circ = circuits.find(c => c.id === id);
+            circ.switchClosed = !circ.switchClosed;
+            
+            const btn = document.getElementById(`btn-switch-${id}`);
+            if (circ.switchClosed) {
+                btn.className = "btn btn-switch closed";
+                btn.innerText = "Switch: CLOSED";
+            } else {
+                btn.className = "btn btn-switch";
+                btn.innerText = "Switch: OPEN";
+            }
         }
 
         let lastTime = performance.now();
@@ -119,79 +183,69 @@
 
             circuits.forEach(circ => {
                 const stats = circuitStats[circ.id];
-                stats.time += dt;
-
-                // Calculate total voltage based on configuration type
-                let totalVoltage = 0;
-                if (circ.type === "Parallel") {
-                    // Parallel: Voltage stays equal to a single cell regardless of how many cells are added
-                    totalVoltage = circ.cellVoltage;
-                } else {
-                    // Series/Standard: Voltages add up together
-                    totalVoltage = circ.cells * circ.cellVoltage;
+                
+                // If switch is OPEN, current is 0 and time stops accumulating charge
+                let effectiveVoltage = circ.switchClosed ? circ.voltage : 0;
+                let current = circ.switchClosed ? (effectiveVoltage / circ.resistance) : 0;
+                
+                if (circ.switchClosed) {
+                    stats.time += dt;
+                    stats.charge = current * stats.time;
                 }
 
-                // Ohm's Law: I = V / R
-                const current = totalVoltage / circ.resistance;
-                stats.charge = current * stats.time; // Q = I * t
-
-                // Update Meter Screen Text
+                // Update text metrics
                 const meterBox = document.getElementById(`meter-${circ.id}`);
-                if (circ.type === "Parallel") {
-                    meterBox.innerHTML = `[PARALLEL BATTERY PACK]<br>• Active Cells: <b>${circ.cells} in Parallel</b><br>• Voltage (Constant): <b>${totalVoltage.toFixed(1)} V</b><br>• Current (Intensity): ${current.toFixed(2)} A`;
-                } else if (circ.type === "Series") {
-                    meterBox.innerHTML = `[SERIES BATTERY PACK]<br>• Active Cells: <b>${circ.cells} in Series</b><br>• Total Voltage (Added): <b>${totalVoltage.toFixed(1)} V</b><br>• Current (Intensity): ${current.toFixed(2)} A`;
+                if (!circ.switchClosed) {
+                    meterBox.innerHTML = `[STATUS: CIRCUIT OPEN ❌]<br>• Path: Broken / Interrupted<br>• Current (Intensity): <b>0.00 A</b><br>• Electrons: <b>Stopped (No Flow)</b>`;
                 } else {
-                    meterBox.innerHTML = `[STANDARD CIRCUIT]<br>• Cells: <b>${circ.cells}</b> | Voltage: <b>${totalVoltage.toFixed(1)} V</b><br>• Current: ${current.toFixed(2)} A<br>• Resistance: ${circ.resistance} Ω`;
+                    meterBox.innerHTML = `[STATUS: CIRCUIT CLOSED ✅]<br>• Voltage: ${effectiveVoltage.toFixed(1)} V | Current: <b>${current.toFixed(2)} A</b><br>• Resistance: ${circ.resistance} Ω<br>• Total Charge (Q): ${stats.charge.toFixed(2)} C`;
                 }
 
-                // Render Canvas Graphics & Moving Electrons
+                // Render Canvas & Electrons
                 const canvas = document.getElementById(`canvas-${circ.id}`);
                 const ctx = canvas.getContext("2d");
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 // Draw Circuit Wire Path
-                ctx.strokeStyle = "#475569";
+                ctx.strokeStyle = circ.switchClosed ? "#475569" : "#7f1d1d"; // Red tint if open wire
                 ctx.lineWidth = 3;
-                ctx.strokeRect(20, 15, 240, 70);
+                ctx.strokeRect(15, 10, 250, 70);
 
-                // Draw Battery Cells visually based on count and type
-                ctx.fillStyle = "#ef4444";
-                if (circ.type === "Parallel") {
-                    // Draw multiple cells stacked side-by-side (Parallel representation)
-                    for (let c = 0; c < circ.cells; c++) {
-                        ctx.fillRect(25 + (c * 8), 35, 6, 30);
-                    }
+                // Draw Switch Graphic Gap on top wire if open
+                if (!circ.switchClosed) {
+                    ctx.fillStyle = "#0f172a";
+                    ctx.fillRect(120, 7, 40, 6); // Break the wire visually
+                    ctx.fillStyle = "#ef4444";
+                    ctx.font = "10px sans-serif";
+                    ctx.fillText("SWITCH OPEN", 105, 5);
                 } else {
-                    // Draw multiple cells connected end-to-end (Series representation)
-                    for (let c = 0; c < circ.cells; c++) {
-                        ctx.fillRect(25 + (c * 12), 38, 10, 24);
-                    }
+                    ctx.fillStyle = "#22c55e";
+                    ctx.font = "10px sans-serif";
+                    ctx.fillText("SWITCH CLOSED", 102, 5);
                 }
 
-                // Draw Resistor
+                // Draw Battery & Resistor
+                ctx.fillStyle = "#ef4444";
+                ctx.fillRect(20, 30, 12, 30);
                 ctx.fillStyle = "#38bdf8";
-                ctx.fillRect(242, 35, 12, 30);
+                ctx.fillRect(250, 30, 12, 30);
 
-                ctx.fillStyle = "#9ca3af";
-                ctx.font = "9px sans-serif";
-                ctx.fillText(circ.type.toUpperCase(), 22, 28);
-                ctx.fillText("RES", 240, 28);
+                // Animate electrons only if circuit is closed
+                const perimeter = 640;
+                const speed = circ.switchClosed ? (current * 25) : 0; // Speed is 0 if open
 
-                // Animate Electrons moving along the path (Perimeter = 620)
-                const perimeter = 620;
-                const speed = current * 22;
-
-                ctx.fillStyle = "#22c55e";
+                ctx.fillStyle = circ.switchClosed ? "#22c55e" : "#64748b"; // Gray out electrons if stopped
                 electrons[circ.id].forEach(el => {
-                    el.pos = (el.pos + speed * dt) % perimeter;
+                    if (circ.switchClosed) {
+                        el.pos = (el.pos + speed * dt) % perimeter;
+                    }
                     
                     let x = 0, y = 0;
                     let p = el.pos;
-                    if (p < 240) { x = 20 + p; y = 15; }
-                    else if (p < 300) { x = 260; y = 15 + (p - 240); }
-                    else if (p < 540) { x = 260 - (p - 300); y = 85; }
-                    else { x = 20; y = 85 - (p - 540); }
+                    if (p < 250) { x = 15 + p; y = 10; }
+                    else if (p < 280) { x = 265; y = 10 + (p - 250); }
+                    else if (p < 530) { x = 265 - (p - 280); y = 80; }
+                    else { x = 15; y = 80 - (p - 530); }
 
                     ctx.beginPath();
                     ctx.arc(x, y, 3.5, 0, Math.PI * 2);
